@@ -1,0 +1,36 @@
+/* Interface */
+#define function addTwo(uint256, uint256) view returns(uint256)
+
+/* Methods */
+// takes 0 from the stack and return O from the stack
+#define macro MAIN() = takes(0) returns(0) {
+   // get the function selector
+   0x00 calldataload
+   // bitshift 224: we keep 256 - 224 = 32 bits hence 4 bytes, the function selector
+   0xE0 shr
+
+   // jump to the implementation of the ADD_TWO function
+   // if the calldata matched the function selector 
+   __FUNC_SIG(addTwo) eq addTwo jumpi
+
+   addTwo:
+        ADD_TWO()
+}
+
+
+// Adapted from Huffmate
+#define macro ADD_TWO() = takes(0) returns(0) {
+    0x04 calldataload       // [num1]
+    dup1                    // [num1, num1]
+    0x24 calldataload       // [num2, num1, num1]
+    add                     // [result, num1]
+    dup1                    // [result, result, num1]
+    swap2                   // [num1, result, result]
+    gt                      // [is_overflow, result]
+    iszero                  // [is_not_overflow, result]
+    is_not_overflow jumpi   // [result]
+    0x00 0x00 revert
+    is_not_overflow:        // [result]
+        0x00 mstore         // place the result in memory
+        0x20 0x00 return    // return first 32 bytes from memory (result)
+}
